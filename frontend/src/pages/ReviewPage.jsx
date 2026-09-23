@@ -47,6 +47,16 @@ export default function ReviewPage({ comparison, onConfirmed }) {
         </div>
       )}
 
+      {extraction.consistency_note && (
+        <div className="notice-banner">
+          <strong>Points to reconcile</strong>
+          <span>{extraction.consistency_note}</span>
+          <span className="notice-foot">
+            Paperwork differences only &mdash; the documents still look like a pair.
+          </span>
+        </div>
+      )}
+
       <label>
         Sanctioned amount (Rs)
         <input

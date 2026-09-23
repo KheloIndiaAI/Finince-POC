@@ -20,7 +20,8 @@ def _session():
     return sessionmaker(bind=engine)()
 
 
-def _seed(session, remarks_snippet="", uc_purpose_snippet="", mismatch_note=""):
+def _seed(session, remarks_snippet="", uc_purpose_snippet="", mismatch_note="",
+          consistency_note=""):
     comparison = Comparison(status="COMPARING")
     session.add(comparison)
     session.flush()
@@ -45,6 +46,7 @@ def _seed(session, remarks_snippet="", uc_purpose_snippet="", mismatch_note=""):
             remarks_snippet=remarks_snippet,
             uc_purpose_snippet=uc_purpose_snippet,
             mismatch_note=mismatch_note,
+            consistency_note=consistency_note,
         )
     )
     session.flush()
@@ -74,7 +76,8 @@ def test_remarks_and_uc_purpose_reach_write_summary(monkeypatch):
     """Both the balance remark and the actual spending category must flow through."""
     seen = {}
 
-    def fake_write_summary(result, remarks_snippet="", uc_purpose_snippet="", mismatch_note=""):
+    def fake_write_summary(result, remarks_snippet="", uc_purpose_snippet="",
+                           mismatch_note="", consistency_note=""):
         seen["remarks"] = remarks_snippet
         seen["uc_purpose"] = uc_purpose_snippet
         return "SUMMARY"
@@ -97,7 +100,8 @@ def test_mismatch_note_reaches_write_summary(monkeypatch):
     """The warning must be handed to the summary prompt, not dropped."""
     seen = {}
 
-    def fake_write_summary(result, remarks_snippet="", uc_purpose_snippet="", mismatch_note=""):
+    def fake_write_summary(result, remarks_snippet="", uc_purpose_snippet="",
+                           mismatch_note="", consistency_note=""):
         seen["mismatch"] = mismatch_note
         return "SUMMARY"
 
@@ -108,3 +112,23 @@ def test_mismatch_note_reaches_write_summary(monkeypatch):
     summary_pipeline.create_version(session, comparison.id)
 
     assert seen["mismatch"] == "different state and year"
+
+
+def test_consistency_note_reaches_write_summary(monkeypatch):
+    """Paperwork differences travel separately from a real mismatch."""
+    seen = {}
+
+    def fake_write_summary(result, remarks_snippet="", uc_purpose_snippet="",
+                           mismatch_note="", consistency_note=""):
+        seen["mismatch"] = mismatch_note
+        seen["consistency"] = consistency_note
+        return "SUMMARY"
+
+    monkeypatch.setattr(summary, "write_summary", fake_write_summary)
+    session = _session()
+    comparison = _seed(session, consistency_note="sanction letter dated a day later")
+
+    summary_pipeline.create_version(session, comparison.id)
+
+    assert seen["consistency"] == "sanction letter dated a day later"
+    assert seen["mismatch"] == ""      # a date difference is not a mismatch

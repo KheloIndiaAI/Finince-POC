@@ -28,6 +28,7 @@ class ExtractionOut(BaseModel):
     remarks_snippet: str = ""
     uc_purpose_snippet: str = ""
     mismatch_note: str = ""
+    consistency_note: str = ""
 
 
 class ComparisonResultOut(BaseModel):

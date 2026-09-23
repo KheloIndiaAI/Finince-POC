@@ -5,8 +5,8 @@ The numbers and the verdict are decided by Python; the LLM only phrases them.
 from app.services import llm
 from app.services.prompts import load_prompt
 
-_PROMPT_NAME = "summary_v4.md"
-PROMPT_VERSION = "summary_v4"
+_PROMPT_NAME = "summary_v5.md"
+PROMPT_VERSION = "summary_v5"
 
 
 def write_summary(
@@ -14,6 +14,7 @@ def write_summary(
     remarks_snippet: str = "",
     uc_purpose_snippet: str = "",
     mismatch_note: str = "",
+    consistency_note: str = "",
 ) -> str:
     prompt = (
         load_prompt(_PROMPT_NAME)
@@ -26,5 +27,6 @@ def write_summary(
         .replace("[[UC_PURPOSE]]", uc_purpose_snippet or "")
         .replace("[[REMARKS]]", remarks_snippet or "")
         .replace("[[MISMATCH]]", mismatch_note or "")
+        .replace("[[CONSISTENCY]]", consistency_note or "")
     )
     return llm.invoke(prompt, max_tokens=400).strip()

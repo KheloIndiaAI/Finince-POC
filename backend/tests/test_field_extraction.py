@@ -59,3 +59,20 @@ def test_mismatch_note_defaults_to_blank(monkeypatch):
     )
     monkeypatch.setattr(llm, "invoke", lambda prompt, **k: fake)
     assert field_extraction.extract_fields("s", "u").mismatch_note == ""
+
+
+def test_consistency_note_is_separate_from_mismatch(monkeypatch):
+    """A differing reference number is a note to reconcile, not a mismatch."""
+    fake = (
+        '{"sanctioned_amount":"60,15,000","sanctioned_snippet":"a",'
+        '"expenditure_amount":"72,29,033","expenditure_snippet":"b",'
+        '"expenditure_type":"manpower salary","type_snippet":"c",'
+        '"uc_purpose_snippet":"","remarks_snippet":"","mismatch_note":"",'
+        '"consistency_note":"UC cites SLKIC/97/2023 dated 17.10.2023; the order '
+        'is dated 16/10/2023 and the UC covers Q1-Q4 while the sanction covers Q1-Q3."}'
+    )
+    monkeypatch.setattr(llm, "invoke", lambda prompt, **k: fake)
+    fields = field_extraction.extract_fields("sanction text", "uc text")
+    assert fields.mismatch_note == ""
+    assert "Q1-Q4" in fields.consistency_note
+    assert fields.expenditure_amount == Decimal("7229033")

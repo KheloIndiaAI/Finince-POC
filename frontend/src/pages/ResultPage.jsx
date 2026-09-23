@@ -56,6 +56,16 @@ export default function ResultPage({ comparison, onStartOver }) {
         </div>
       )}
 
+      {extraction.consistency_note && (
+        <div className="notice-banner">
+          <strong>Points to reconcile</strong>
+          <span>{extraction.consistency_note}</span>
+          <span className="notice-foot">
+            Paperwork differences only &mdash; the documents still look like a pair.
+          </span>
+        </div>
+      )}
+
       <div className="stat-grid">
         <div className="stat-tile">
           <span className="stat-label">Sanctioned</span>

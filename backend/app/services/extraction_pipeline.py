@@ -36,6 +36,7 @@ def run_extraction(
         remarks_snippet=fields.remarks_snippet,
         uc_purpose_snippet=fields.uc_purpose_snippet,
         mismatch_note=fields.mismatch_note,
+        consistency_note=fields.consistency_note,
         model_name=settings.claude_model,
         prompt_version=field_extraction.PROMPT_VERSION,
     )

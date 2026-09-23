@@ -82,6 +82,7 @@ class ComparisonExtraction(Base, TimestampMixin):
     remarks_snippet: Mapped[str] = mapped_column(Text, default="")
     uc_purpose_snippet: Mapped[str] = mapped_column(Text, default="")
     mismatch_note: Mapped[str] = mapped_column(Text, default="")
+    consistency_note: Mapped[str] = mapped_column(Text, default="")
     model_name: Mapped[str] = mapped_column(String(128), default="")
     prompt_version: Mapped[str] = mapped_column(String(32), default="")
 

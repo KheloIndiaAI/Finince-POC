@@ -19,9 +19,10 @@ def create_version(session: Session, comparison_id) -> ComparisonSummary:
     remarks_snippet = extraction.remarks_snippet if extraction else ""
     uc_purpose_snippet = extraction.uc_purpose_snippet if extraction else ""
     mismatch_note = extraction.mismatch_note if extraction else ""
+    consistency_note = extraction.consistency_note if extraction else ""
 
     text = summary.write_summary(
-        result, remarks_snippet, uc_purpose_snippet, mismatch_note
+        result, remarks_snippet, uc_purpose_snippet, mismatch_note, consistency_note
     )
     session.query(ComparisonSummary).filter_by(
         comparison_id=comparison_id, is_current=True

@@ -10,8 +10,8 @@ from decimal import Decimal, InvalidOperation
 from app.services import llm
 from app.services.prompts import load_prompt
 
-_PROMPT_NAME = "extraction_v5.md"
-PROMPT_VERSION = "extraction_v5"
+_PROMPT_NAME = "extraction_v6.md"
+PROMPT_VERSION = "extraction_v6"
 
 
 @dataclass
@@ -25,6 +25,7 @@ class ExtractedFields:
     remarks_snippet: str = ""
     uc_purpose_snippet: str = ""
     mismatch_note: str = ""
+    consistency_note: str = ""
 
 
 def extract_fields(sanction_text: str, uc_text: str) -> ExtractedFields:
@@ -44,6 +45,7 @@ def extract_fields(sanction_text: str, uc_text: str) -> ExtractedFields:
         remarks_snippet=str(data.get("remarks_snippet") or ""),
         uc_purpose_snippet=str(data.get("uc_purpose_snippet") or ""),
         mismatch_note=str(data.get("mismatch_note") or ""),
+        consistency_note=str(data.get("consistency_note") or ""),
     )
 
 
