@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Host port 55433: 5432/5433 are taken by native Postgres services on dev machines.
+      # Dev only; remove in prod (backend reaches Postgres over the internal network).
+      - "55433:5432"
+
+  backend:
+    build: ./backend
+    container_name: ai-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # Inside the compose network Postgres is always `postgres:5432`. These win over
+      # env_file, so backend/.env can hold host-friendly values for `python run.py`.
+      DB_HOST: postgres
+      DB_PORT: 5432
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
