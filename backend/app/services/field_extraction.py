@@ -10,8 +10,8 @@ from decimal import Decimal, InvalidOperation
 from app.services import llm
 from app.services.prompts import load_prompt
 
-_PROMPT_NAME = "extraction_v6.md"
-PROMPT_VERSION = "extraction_v6"
+_PROMPT_NAME = "extraction_v7.md"
+PROMPT_VERSION = "extraction_v7"
 
 
 @dataclass
