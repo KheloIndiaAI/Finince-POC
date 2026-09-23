@@ -19,7 +19,7 @@ app = FastAPI(title="Sanction vs UC Comparison", lifespan=lifespan)
 # Dev CORS: allow the React dev server. Tighten before production.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list,
     allow_methods=["*"],
     allow_headers=["*"],
 )

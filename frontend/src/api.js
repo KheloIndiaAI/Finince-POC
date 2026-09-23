@@ -1,5 +1,8 @@
 // Thin fetch wrapper for the backend's comparison endpoints.
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+// Default is same-origin (/api/...): in production nginx proxies it to the
+// backend, and in dev the vite proxy does. Set VITE_API_BASE_URL only to point
+// the app at a backend on a different host.
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 async function request(path, options = {}) {
   const response = await fetch(`${BASE_URL}${path}`, options);

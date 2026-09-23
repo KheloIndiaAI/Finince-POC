@@ -1,3 +1,7 @@
+# The whole stack: Postgres + FastAPI backend + React frontend behind nginx.
+#   docker compose up -d --build     ->  http://localhost  (or the EC2 public IP)
+# Only the frontend is published; the browser talks to one origin and nginx
+# proxies /api to the backend over the internal network.
 services:
   postgres:
     image: postgres:16
@@ -9,9 +13,16 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
-      # Host port 55433: 5432/5433 are taken by native Postgres services on dev machines.
-      # Dev only; remove in prod (backend reaches Postgres over the internal network).
+      # DEV ONLY, so `python run.py` on the host can reach this database.
+      # Host port 55433 because 5432/5433 are taken by native Postgres services
+      # on some dev machines. Comment this out in production, and never open
+      # 5432/55433 in the EC2 security group.
       - "55433:5432"
 
   backend:
@@ -21,14 +32,26 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      # Inside the compose network Postgres is always `postgres:5432`. These win over
-      # env_file, so backend/.env can hold host-friendly values for `python run.py`.
+      # Inside the compose network Postgres is always postgres:5432. These win
+      # over env_file, so backend/.env can keep host values for `python run.py`.
       DB_HOST: postgres
       DB_PORT: 5432
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    # Deliberately not published: reach the API through nginx on port 80.
+    # (Publishing 8000 here also collides with a `python run.py` on the host.)
+    expose:
+      - "8000"
+
+  frontend:
+    build: ./frontend
+    container_name: ai-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
     ports:
-      - "8000:8000"
+      - "80:80"
 
 volumes:
   postgres_data:
