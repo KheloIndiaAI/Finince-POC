@@ -1,4 +1,6 @@
 """Run the extract phase for a comparison: text -> 3 fields -> stored, EXTRACTED."""
+from concurrent.futures import ThreadPoolExecutor
+
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -9,11 +11,20 @@ from app.services import field_extraction, text_extraction
 def run_extraction(
     session: Session, comparison: Comparison, docs: list[tuple[Document, bytes]]
 ) -> ComparisonExtraction:
-    texts: dict[str, str] = {}
-    for document, data in docs:
-        text, method = text_extraction.extract_text(
-            data, settings.s3_bucket, document.s3_key
+    # Both documents are OCR'd at once: each Textract job spends most of its
+    # time queued, so running them in sequence doubles the wait for no reason.
+    with ThreadPoolExecutor(max_workers=len(docs)) as pool:
+        results = list(
+            pool.map(
+                lambda pair: text_extraction.extract_text(
+                    pair[1], settings.s3_bucket, pair[0].s3_key
+                ),
+                docs,
+            )
         )
+
+    texts: dict[str, str] = {}
+    for (document, _), (text, method) in zip(docs, results):
         session.add(
             DocumentContent(
                 document_id=document.id,

@@ -10,6 +10,7 @@ from collections import Counter
 
 import boto3
 import pdfplumber
+from botocore.exceptions import ClientError
 
 from app.config import settings
 
@@ -17,6 +18,8 @@ from app.config import settings
 # eOffice carries a stamp on every page (~200 chars/page) that would otherwise pass
 # as a text layer; a real text layer runs several hundred body characters per page.
 _MIN_BODY_CHARS_PER_PAGE = 200
+# Textract's synchronous API takes a single page of at most 5 MB.
+_SYNC_MAX_BYTES = 5 * 1024 * 1024
 _textract = boto3.client("textract", region_name=settings.aws_region)
 
 
@@ -25,7 +28,20 @@ def extract_text(pdf_bytes: bytes, s3_bucket: str, s3_key: str) -> tuple[str, st
     pages = _extract_digital(pdf_bytes)
     if pages and len(_body_text(pages)) >= _MIN_BODY_CHARS_PER_PAGE * len(pages):
         return "\n".join(pages), "TEXT"
+    if len(pages) == 1 and len(pdf_bytes) <= _SYNC_MAX_BYTES:
+        try:
+            # Seconds instead of minutes: the async API queues the job, the
+            # synchronous one answers directly. Most sanction orders qualify.
+            return _extract_textract_sync(pdf_bytes), "TEXTRACT"
+        except ClientError:
+            pass  # unsupported for this file - fall through to the async job
     return _extract_textract(s3_bucket, s3_key), "TEXTRACT"
+
+
+def _extract_textract_sync(pdf_bytes: bytes) -> str:
+    """Synchronous OCR. Textract allows it for a single page of up to 5 MB."""
+    response = _textract.detect_document_text(Document={"Bytes": pdf_bytes})
+    return "\n".join(b["Text"] for b in response["Blocks"] if b["BlockType"] == "LINE")
 
 
 def _extract_digital(pdf_bytes: bytes) -> list[str]:
@@ -54,7 +70,7 @@ def _extract_textract(bucket: str, key: str) -> str:
     return _read_all_lines(job_id)
 
 
-def _wait_for_job(job_id: str, tries: int = 60, delay: int = 2) -> None:
+def _wait_for_job(job_id: str, tries: int = 150, delay: float = 1.0) -> None:
     for _ in range(tries):
         status = _textract.get_document_text_detection(JobId=job_id)["JobStatus"]
         if status == "SUCCEEDED":
